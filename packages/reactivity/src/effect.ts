@@ -1,3 +1,4 @@
+// WeakMap 用于存储那些只有当 key 所引用的对象存在时才有价值的信息
 const targetMap = new WeakMap()
 
 export function track(target, key) {
@@ -31,6 +32,7 @@ export function trigger(target, key) {
   effectsToRun.forEach((fn: Function) => fn())
 }
 
+// 用一个全局变量存储被注册的副作用函数
 export let activeEffect
 export function effect(fn) {
   const effectFn = () => {
@@ -40,9 +42,11 @@ export function effect(fn) {
     fn()
   }
   effectFn.deps = []
+  // 调用时，副作用立即执行一次
   effectFn()
 }
 
+// 清理函数，解决分支切换问题
 function cleanup(effectFn) {
   for (let i = 0; i < effectFn.deps.length; i++) {
     const deps = effectFn.deps[i]
