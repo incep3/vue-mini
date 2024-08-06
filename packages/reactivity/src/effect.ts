@@ -41,14 +41,21 @@ export function trigger(target, key) {
   const effectsToRun = new Set()
   addToRun(effects)
 
-  effectsToRun.forEach((fn: Function) => fn())
+  effectsToRun.forEach((effectFn: Function) => {
+    if (effectFn.options.scheduler) {
+      effectFn.options.scheduler(effectFn)
+    } else {
+      // 否则直接执行副作用函数（之前的默认行为）
+      effectFn()
+    }
+  })
 }
 
 // 用一个全局变量存储被注册的副作用函数
 export let activeEffect
 // effect栈：处理嵌套的 effect
 const effectStack = []
-export function effect(fn) {
+export function effect(fn, options = {}) {
   const effectFn = () => {
     // 调用 cleanup 函数完成清除工作 重新收集依赖
     cleanup(effectFn)
@@ -63,6 +70,7 @@ export function effect(fn) {
       activeEffect = effectStack[effectStack.length - 1]
     }
   }
+  effectFn.options = options
   effectFn.deps = []
   // 调用时，副作用立即执行一次
   effectFn()
