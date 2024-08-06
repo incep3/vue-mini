@@ -9,18 +9,26 @@ export function effect(fn, options = {}) {
     activeEffect = effectFn
     // 在调用副作用函数之前将当前副作用函数压入栈中
     effectStack.push(effectFn)
+    // 将 fn 的执行结果存储到 res 中
+    let res
     try {
-      fn()
+      res = fn()
     } finally {
       effectStack.pop()
       // activeEffect 始终是栈顶元素
       activeEffect = effectStack[effectStack.length - 1]
     }
+    // 手动执行可以拿到 fn 结果
+    return res
   }
   effectFn.options = options
   effectFn.deps = []
-  // 调用时，副作用立即执行一次
-  effectFn()
+  // lazy:懒执行的 effect
+  if (!options.lazy) {
+    effectFn()
+  }
+  // 懒执行：需要将副作用函数作为返回值返回，用于手动执行
+  return effectFn
 }
 
 // 清理函数，解决分支切换问题
