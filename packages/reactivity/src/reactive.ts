@@ -1,5 +1,5 @@
 import { hasOwn, isObject } from '@vue/shared'
-import { track, trigger } from './effect'
+import { track, trigger } from './reactiveEffect'
 
 export const convert = (val) => (isObject(val) ? reactive(val) : val)
 
