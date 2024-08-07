@@ -10,17 +10,28 @@ export function watch(source, callback, options = {}) {
   }
 
   let oldValue, newValue
+
+  // 提取 scheduler 调度函数为一个独立的 job 函数
+  const job = () => {
+    newValue = effectFn()
+    callback(newValue, oldValue)
+    oldValue = newValue
+  }
+
   // 使用 effect 注册副作用函数时，开启 lazy 选项，并把返回值存储到 effectFn 中以便后续手动调用
   const effectFn = effect(getter, {
     lazy: true,
-    scheduler() {
-      newValue = effectFn()
-      callback(newValue, oldValue)
-      oldValue = newValue
-    },
+    // 使用 job 函数作为调度器函数
+    scheduler: job,
   })
-  // 手动调用副作用函数，拿到的值就是旧值
-  oldValue = effectFn()
+
+  if (options.immediate) {
+    // 当 immediate 为 true 时立即执行 job，从而触发回调执行
+    job()
+  } else {
+    // 手动调用副作用函数，拿到的值就是旧值
+    oldValue = effectFn()
+  }
 }
 
 function traverse(value, seen = new Set()) {
