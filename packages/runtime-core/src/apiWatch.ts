@@ -11,10 +11,21 @@ export function watch(source, callback, options = {}) {
 
   let oldValue, newValue
 
+  // cleanup 用来存储用户注册的过期回调
+  let cleanup
+  // 定义 onInvalidate 函数
+  function onInvalidate(fn) {
+    cleanup = fn
+  }
+
   // 提取 scheduler 调度函数为一个独立的 job 函数
   const job = () => {
     newValue = effectFn()
-    callback(newValue, oldValue)
+    // 在回调函数 callback 之前，先调用过期函数
+    if (cleanup) {
+      cleanup()
+    }
+    callback(newValue, oldValue, onInvalidate)
     oldValue = newValue
   }
 
