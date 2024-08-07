@@ -1,0 +1,30 @@
+import { effect } from '@vue/reactivity'
+
+export function watch(source, callback, options = {}) {
+  let getter
+  if (typeof source === 'function') {
+    getter = source
+  } else {
+    // 调用 traverse 递归地读取，触发依赖收集
+    getter = () => traverse(source)
+  }
+
+  effect(getter, {
+    scheduler() {
+      callback()
+    },
+  })
+}
+
+function traverse(value, seen = new Set()) {
+  // 如果要读取的数据事原始值，或者已经被读取过了
+  if (typeof value !== 'object' || value === null || seen.has(value)) return
+  // 避免循环引用引起的死循环
+  seen.add(value)
+  //暂时不考虑数组等其他结构
+  // 假设 value 就是一个对象
+  for (const k in value) {
+    traverse(value[k], seen)
+  }
+  return value
+}
