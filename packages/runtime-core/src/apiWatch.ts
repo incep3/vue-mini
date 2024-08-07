@@ -22,7 +22,14 @@ export function watch(source, callback, options = {}) {
   const effectFn = effect(getter, {
     lazy: true,
     // 使用 job 函数作为调度器函数
-    scheduler: job,
+    scheduler: () => {
+      if (options.flush === 'post') {
+        const p = Promise.resolve()
+        p.then(job)
+      } else {
+        job()
+      }
+    },
   })
 
   if (options.immediate) {
