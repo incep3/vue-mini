@@ -9,11 +9,18 @@ export function watch(source, callback, options = {}) {
     getter = () => traverse(source)
   }
 
-  effect(getter, {
+  let oldValue, newValue
+  // 使用 effect 注册副作用函数时，开启 lazy 选项，并把返回值存储到 effectFn 中以便后续手动调用
+  const effectFn = effect(getter, {
+    lazy: true,
     scheduler() {
-      callback()
+      newValue = effectFn()
+      callback(newValue, oldValue)
+      oldValue = newValue
     },
   })
+  // 手动调用副作用函数，拿到的值就是旧值
+  oldValue = effectFn()
 }
 
 function traverse(value, seen = new Set()) {
