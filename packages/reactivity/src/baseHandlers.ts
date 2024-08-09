@@ -108,3 +108,4 @@ class ReadonlyReactiveHandler extends BaseReactiveHandler {
 export const mutableHandlers = new MutableReactiveHandler()
 export const readonlyHandlers = new ReadonlyReactiveHandler()
 export const shallowReactiveHandlers = new MutableReactiveHandler(true)
+export const shallowReadonlyHandlers = new ReadonlyReactiveHandler(true)

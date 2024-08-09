@@ -10,6 +10,7 @@ import { warn } from './warning'
 export const reactiveMap = new WeakMap()
 export const shallowReactiveMap = new WeakMap()
 export const readonlyMap = new WeakMap()
+export const shallowReadonlyMap = new WeakMap()
 
 enum TargetType {
   INVALID = 0,
@@ -46,6 +47,14 @@ export function shallowReactive(target) {
 
 export function readonly(target) {
   return createReactiveObject(target, readonlyHandlers, readonlyMap)
+}
+
+export function shallowReadonly(target) {
+  return createReactiveObject(
+    target,
+    shallowReactiveHandlers,
+    shallowReactiveMap
+  )
 }
 
 function createReactiveObject(target, baseHandlers, proxyMap) {
