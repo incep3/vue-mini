@@ -57,7 +57,8 @@ class MutableReactiveHandler extends BaseReactiveHandler {
         trigger(target, TriggerOpTypes.ADD, key)
       } else if (hasChanged(value, oldValue)) {
         // 比较新值和旧值，只有当不全等的时候才触发响应；NaN 与 NaN 进行全等比较总会得到false，因此 hasChanged 内用 Object.is 方法判断；
-        trigger(target, TriggerOpTypes.SET, key)
+        // 新的属性值需要传递过去，数组修改了 length，索引值 >= length 的元素会触发响应
+        trigger(target, TriggerOpTypes.SET, key, value)
       }
     }
     return result
