@@ -1,14 +1,21 @@
+const hasOwnProperty = Object.prototype.hasOwnProperty
+export const hasOwn = (
+  val: object,
+  key: string | symbol
+): key is keyof typeof val => hasOwnProperty.call(val, key)
+
 export const isFunction = (val: unknown): val is Function =>
   typeof val === 'function'
 export const isString = (val: unknown): val is string => typeof val === 'string'
 export const isObject = (val: unknown): val is Record<any, any> =>
   val !== null && typeof val === 'object'
 
-const hasOwnProperty = Object.prototype.hasOwnProperty
-export const hasOwn = (
-  val: object,
-  key: string | symbol
-): key is keyof typeof val => hasOwnProperty.call(val, key)
+const objectToString = Object.prototype.toString
+const toTypeString = (value: unknown): string => objectToString.call(value)
+export const toRawType = (value: unknown): string => {
+  // extract "RawType" from strings like "[object RawType]"
+  return toTypeString(value).slice(8, -1)
+}
 
 // compare whether a value has changed, accounting for NaN.
 // 封装 hasChanged 方法，更加语义化
