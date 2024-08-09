@@ -1,3 +1,4 @@
+import { shouldTrack } from './baseHandlers'
 import { TriggerOpTypes } from './constants'
 import { activeEffect } from './effect'
 
@@ -8,7 +9,7 @@ export const ITERATE_KEY = Symbol('')
 
 export function track(target, key) {
   // 没有 activeEffect，直接 return
-  if (!activeEffect) return
+  if (!activeEffect || !shouldTrack) return
 
   let depsMap = targetMap.get(target)
   if (!depsMap) {

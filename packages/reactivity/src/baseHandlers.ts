@@ -20,6 +20,17 @@ const arrayInstrumentations = {}
   }
 })
 
+export let shouldTrack = true
+;['push', 'pop', 'shift', 'unshift', 'splice'].forEach((method) => {
+  const originMethod = Array.prototype[method]
+  arrayInstrumentations[method] = function (...args) {
+    shouldTrack = false
+    let res = originMethod.apply(this, args)
+    shouldTrack = true
+    return res
+  }
+})
+
 // @ts-ignore
 class BaseReactiveHandler implements ProxyHandler<T> {
   constructor(
@@ -35,8 +46,8 @@ class BaseReactiveHandler implements ProxyHandler<T> {
       return target
     }
 
-    // 返回定义在 arrayInstrumentations 上的值，实现了重写
     if (Array.isArray(target) && hasOwn(arrayInstrumentations, key)) {
+      // 返回定义在 arrayInstrumentations 的值，从而实现数组方法的重写
       return Reflect.get(arrayInstrumentations, key, receiver)
     }
 
