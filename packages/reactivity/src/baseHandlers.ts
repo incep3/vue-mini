@@ -4,6 +4,22 @@ import { ReactiveFlags, TriggerOpTypes } from './constants'
 import { reactive, readonly, toRaw } from './reactive'
 import { warn } from './warning'
 
+const arrayInstrumentations = {}
+;['includes', 'indexOf', 'lastIndexOf'].forEach((method) => {
+  const originMethod = Array.prototype[method]
+  arrayInstrumentations[method] = function (...args) {
+    // this 是代理对象，现在代理对象中查找，将结果存储到 res 中
+    let res = originMethod.apply(this, args)
+
+    if (res === false || res === -1) {
+      // res 为 false 说明没找到，通过 this[ReactiveFlags.RAW] 拿到原始数组，再去其中查找并更新 res 值
+      res = originMethod.apply(this[ReactiveFlags.RAW], args)
+    }
+
+    return res
+  }
+})
+
 // @ts-ignore
 class BaseReactiveHandler implements ProxyHandler<T> {
   constructor(
@@ -17,6 +33,11 @@ class BaseReactiveHandler implements ProxyHandler<T> {
     if (key === ReactiveFlags.RAW) {
       // 代理对象可以通过 raw 属性访问原始数据
       return target
+    }
+
+    // 返回定义在 arrayInstrumentations 上的值，实现了重写
+    if (Array.isArray(target) && hasOwn(arrayInstrumentations, key)) {
+      return Reflect.get(arrayInstrumentations, key, receiver)
     }
 
     const res = Reflect.get(target, key, receiver)

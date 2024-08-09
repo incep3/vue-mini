@@ -20,6 +20,7 @@ enum TargetType {
 function targetTypeMap(rawType) {
   switch (rawType) {
     case 'Object':
+    case 'Array':
       return TargetType.COMMON
     default:
       return TargetType.INVALID
