@@ -1,7 +1,7 @@
-import { hasChanged, hasOwn } from '@vue/shared'
+import { hasChanged, hasOwn, isObject } from '@vue/shared'
 import { track, trigger, ITERATE_KEY } from './reactiveEffect'
 import { ReactiveFlags, TriggerOpTypes } from './constants'
-import { toRaw } from './reactive'
+import { reactive, toRaw } from './reactive'
 
 // @ts-ignore
 class BaseReactiveHandler implements ProxyHandler<T> {
@@ -13,8 +13,15 @@ class BaseReactiveHandler implements ProxyHandler<T> {
       return target
     }
 
+    const res = Reflect.get(target, key, receiver)
+
     track(target, key)
-    return Reflect.get(target, key, receiver)
+
+    if (isObject(res)) {
+      return reactive(res)
+    }
+
+    return res
   }
 
   set(target, key, newValue, reciever): any {
