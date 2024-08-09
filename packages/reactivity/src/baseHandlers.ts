@@ -1,12 +1,18 @@
 import { hasChanged, hasOwn } from '@vue/shared'
 import { track, trigger, ITERATE_KEY } from './reactiveEffect'
-import { TriggerOpTypes } from './constants'
+import { ReactiveFlags, TriggerOpTypes } from './constants'
+import { toRaw } from './reactive'
 
 // @ts-ignore
 class BaseReactiveHandler implements ProxyHandler<T> {
   constructor() {}
 
   get(target: object, key: string, receiver: object): any {
+    // 代理对象可以通过 raw 属性访问原始数据
+    if (key === ReactiveFlags.RAW) {
+      return target
+    }
+
     track(target, key)
     return Reflect.get(target, key, receiver)
   }
@@ -19,9 +25,12 @@ class BaseReactiveHandler implements ProxyHandler<T> {
 
     const result = Reflect.set(target, key, newValue, reciever)
 
-    // 比较新值和旧值，只有当不全等的时候才触发响应；NaN 与 NaN 进行全等比较总会得到false，因此 hasChanged 内用 Object.is 方法判断；
-    if (hasChanged(oldValue, newValue)) {
-      trigger(target, key, type)
+    // target === toRaw(reciever)，说明 receiver 就是 target 的代理对象
+    if (target === toRaw(reciever)) {
+      if (hasChanged(oldValue, newValue)) {
+        // 比较新值和旧值，只有当不全等的时候才触发响应；NaN 与 NaN 进行全等比较总会得到false，因此 hasChanged 内用 Object.is 方法判断；
+        trigger(target, key, type)
+      }
     }
     return result
   }
