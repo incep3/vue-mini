@@ -1,3 +1,4 @@
+import { shouldTrack } from './baseHandlers'
 import { TriggerOpTypes } from './constants'
 import { activeEffect } from './effect'
 
@@ -8,7 +9,7 @@ export const ITERATE_KEY = Symbol('')
 
 export function track(target, key) {
   // 没有 activeEffect，直接 return
-  if (!activeEffect) return
+  if (!activeEffect || !shouldTrack) return
 
   let depsMap = targetMap.get(target)
   if (!depsMap) {
@@ -26,7 +27,7 @@ export function track(target, key) {
   activeEffect.deps.push(deps)
 }
 
-export function trigger(target, type, key) {
+export function trigger(target, type: TriggerOpTypes, key, newValue?) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return
 
@@ -50,6 +51,19 @@ export function trigger(target, type, key) {
   if (type === TriggerOpTypes.ADD || type == TriggerOpTypes.DELETE) {
     const iterateEffects = depsMap.get(ITERATE_KEY)
     addToRun(iterateEffects)
+  }
+  if (type === TriggerOpTypes.ADD && Array.isArray(target)) {
+    // 当操作类型为 ADD 并且目标对象是数组时， 会修改数组 length，需要执行与 length 关联的副作用函数
+    const lengthEffects = depsMap.get('length')
+    addToRun(lengthEffects)
+  }
+  if (Array.isArray(target) && key === 'length') {
+    // 对于索引大于或等于新的 length 值的元素，需要触发副作用，因为没有了
+    depsMap.forEach((effects, key) => {
+      if (key >= newValue) {
+        addToRun(effects)
+      }
+    })
   }
 
   effectsToRun.forEach((effectFn) => {

@@ -1,8 +1,35 @@
-import { hasChanged, hasOwn, isObject } from '@vue/shared'
+import { hasChanged, hasOwn, isArray, isObject, isSymbol } from '@vue/shared'
 import { track, trigger, ITERATE_KEY } from './reactiveEffect'
 import { ReactiveFlags, TriggerOpTypes } from './constants'
 import { reactive, readonly, toRaw } from './reactive'
 import { warn } from './warning'
+
+const arrayInstrumentations = {}
+;['includes', 'indexOf', 'lastIndexOf'].forEach((method) => {
+  const originMethod = Array.prototype[method]
+  arrayInstrumentations[method] = function (...args) {
+    // this 是代理对象，现在代理对象中查找，将结果存储到 res 中
+    let res = originMethod.apply(this, args)
+
+    if (res === false || res === -1) {
+      // res 为 false 说明没找到，通过 this[ReactiveFlags.RAW] 拿到原始数组，再去其中查找并更新 res 值
+      res = originMethod.apply(this[ReactiveFlags.RAW], args)
+    }
+
+    return res
+  }
+})
+
+export let shouldTrack = true
+;['push', 'pop', 'shift', 'unshift', 'splice'].forEach((method) => {
+  const originMethod = Array.prototype[method]
+  arrayInstrumentations[method] = function (...args) {
+    shouldTrack = false
+    let res = originMethod.apply(this, args)
+    shouldTrack = true
+    return res
+  }
+})
 
 // @ts-ignore
 class BaseReactiveHandler implements ProxyHandler<T> {
@@ -19,9 +46,16 @@ class BaseReactiveHandler implements ProxyHandler<T> {
       return target
     }
 
+    if (Array.isArray(target) && hasOwn(arrayInstrumentations, key)) {
+      // 返回定义在 arrayInstrumentations 的值，从而实现数组方法的重写
+      return Reflect.get(arrayInstrumentations, key, receiver)
+    }
+
     const res = Reflect.get(target, key, receiver)
 
-    if (!isReadonly) {
+    // 添加判断，如果 key 的类型是 symbol，则不进行追踪
+    // TODO：这里添加 !isSymbol(key) 会让通过的测试用例少一个
+    if (!isReadonly && !isSymbol(key)) {
       track(target, key)
     }
 
@@ -42,19 +76,23 @@ class MutableReactiveHandler extends BaseReactiveHandler {
     super(isShallow)
   }
 
-  set(target, key, newValue, reciever): any {
+  set(target, key, value, reciever): any {
     const oldValue = target[key]
 
-    // 如果属性不存在，则说明是在添加新属性，否则是设置已有属性
-    const type = hasOwn(target, key) ? TriggerOpTypes.SET : TriggerOpTypes.ADD
-
-    const result = Reflect.set(target, key, newValue, reciever)
-
+    // 判断是否现存的 key
+    const hadKey = Array.isArray(target)
+      ? Number(key) < target.length
+      : hasOwn(target, key)
+    const result = Reflect.set(target, key, value, reciever)
     // target === toRaw(reciever)，说明 receiver 就是 target 的代理对象
     if (target === toRaw(reciever)) {
-      if (hasChanged(oldValue, newValue)) {
+      if (!hadKey) {
+        // 新 key，则 trigger 的 type 为 add
+        trigger(target, TriggerOpTypes.ADD, key)
+      } else if (hasChanged(value, oldValue)) {
         // 比较新值和旧值，只有当不全等的时候才触发响应；NaN 与 NaN 进行全等比较总会得到false，因此 hasChanged 内用 Object.is 方法判断；
-        trigger(target, type, key)
+        // 新的属性值需要传递过去，数组修改了 length，索引值 >= length 的元素会触发响应
+        trigger(target, TriggerOpTypes.SET, key, value)
       }
     }
     return result
@@ -78,7 +116,7 @@ class MutableReactiveHandler extends BaseReactiveHandler {
     return Reflect.has(target, key)
   }
   ownKeys(target) {
-    track(target, ITERATE_KEY)
+    track(target, isArray(target) ? 'length' : ITERATE_KEY)
     return Reflect.ownKeys(target)
   }
 }
