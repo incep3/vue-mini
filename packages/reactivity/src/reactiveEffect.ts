@@ -51,6 +51,11 @@ export function trigger(target, type, key) {
     const iterateEffects = depsMap.get(ITERATE_KEY)
     addToRun(iterateEffects)
   }
+  if (type === TriggerOpTypes.ADD && Array.isArray(target)) {
+    // 当操作类型为 ADD 并且目标对象是数组时， 会修改数组 length，需要执行与 length 关联的副作用函数
+    const lengthEffects = depsMap.get('length')
+    addToRun(lengthEffects)
+  }
 
   effectsToRun.forEach((effectFn) => {
     if (effectFn.options.scheduler) {

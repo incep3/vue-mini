@@ -42,19 +42,22 @@ class MutableReactiveHandler extends BaseReactiveHandler {
     super(isShallow)
   }
 
-  set(target, key, newValue, reciever): any {
+  set(target, key, value, reciever): any {
     const oldValue = target[key]
 
-    // 如果属性不存在，则说明是在添加新属性，否则是设置已有属性
-    const type = hasOwn(target, key) ? TriggerOpTypes.SET : TriggerOpTypes.ADD
-
-    const result = Reflect.set(target, key, newValue, reciever)
-
+    // 判断是否现存的 key
+    const hadKey = Array.isArray(target)
+      ? Number(key) < target.length
+      : hasOwn(target, key)
+    const result = Reflect.set(target, key, value, reciever)
     // target === toRaw(reciever)，说明 receiver 就是 target 的代理对象
     if (target === toRaw(reciever)) {
-      if (hasChanged(oldValue, newValue)) {
+      if (!hadKey) {
+        // 新 key，则 trigger 的 type 为 add
+        trigger(target, TriggerOpTypes.ADD, key)
+      } else if (hasChanged(value, oldValue)) {
         // 比较新值和旧值，只有当不全等的时候才触发响应；NaN 与 NaN 进行全等比较总会得到false，因此 hasChanged 内用 Object.is 方法判断；
-        trigger(target, type, key)
+        trigger(target, TriggerOpTypes.SET, key)
       }
     }
     return result
