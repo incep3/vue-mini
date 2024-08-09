@@ -1,29 +1,36 @@
 import { hasChanged, hasOwn, isObject } from '@vue/shared'
 import { track, trigger, ITERATE_KEY } from './reactiveEffect'
 import { ReactiveFlags, TriggerOpTypes } from './constants'
-import { reactive, toRaw } from './reactive'
+import { reactive, readonly, toRaw } from './reactive'
+import { warn } from './warning'
 
 // @ts-ignore
 class BaseReactiveHandler implements ProxyHandler<T> {
-  constructor(protected readonly _isShallow = false) {}
+  constructor(
+    protected readonly _isReadonly = false,
+    protected readonly _isShallow = false
+  ) {}
 
   get(target: object, key: string, receiver: object): any {
-    const isShallow = this._isShallow
-    // 代理对象可以通过 raw 属性访问原始数据
+    const isReadonly = this._isReadonly,
+      isShallow = this._isShallow
     if (key === ReactiveFlags.RAW) {
+      // 代理对象可以通过 raw 属性访问原始数据
       return target
     }
 
     const res = Reflect.get(target, key, receiver)
 
-    track(target, key)
+    if (!isReadonly) {
+      track(target, key)
+    }
 
     if (isShallow) {
       return res
     }
 
     if (isObject(res)) {
-      return reactive(res)
+      return isReadonly ? readonly(res) : reactive(res)
     }
 
     return res
@@ -76,5 +83,28 @@ class MutableReactiveHandler extends BaseReactiveHandler {
   }
 }
 
+class ReadonlyReactiveHandler extends BaseReactiveHandler {
+  constructor(isShallow = false) {
+    super(true, isShallow)
+  }
+
+  set(target: object, key: string | symbol) {
+    warn(
+      `Set operation on key "${String(key)}" failed: target is readonly.`,
+      target
+    )
+    return true
+  }
+
+  deleteProperty(target: object, key: string | symbol) {
+    warn(
+      `Delete operation on key "${String(key)}" failed: target is readonly.`,
+      target
+    )
+    return true
+  }
+}
+
 export const mutableHandlers = new MutableReactiveHandler()
+export const readonlyHandlers = new ReadonlyReactiveHandler()
 export const shallowReactiveHandlers = new MutableReactiveHandler(true)
