@@ -1,7 +1,10 @@
+import { TriggerOpTypes } from './constants'
 import { activeEffect } from './effect'
 
 // WeakMap 用于存储那些只有当 key 所引用的对象存在时才有价值的信息
 const targetMap = new WeakMap()
+
+export const ITERATE_KEY = Symbol('')
 
 export function track(target, key) {
   // 没有 activeEffect，直接 return
@@ -23,7 +26,7 @@ export function track(target, key) {
   activeEffect.deps.push(deps)
 }
 
-export function trigger(target, key) {
+export function trigger(target, key, type) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return
 
@@ -41,7 +44,13 @@ export function trigger(target, key) {
 
   // 重新构造一个 Set 集合，防止无限执行（语言规范： 在调用 forEach 遍历 Set 集合时，如果一个值已经被访问过，但该值被删除并重新添加到集合，如果此时 forEach 遍历没有结束，那么该值会重新被访问）
   const effectsToRun = new Set()
+
   addToRun(effects)
+  // 只有当操作类型为 ADD 时，才触发与 ITERATE_KEY 相关联的副作用函数
+  if (type === TriggerOpTypes.ADD) {
+    const iterateEffects = depsMap.get(ITERATE_KEY)
+    addToRun(iterateEffects)
+  }
 
   effectsToRun.forEach((effectFn) => {
     if (effectFn.options.scheduler) {
