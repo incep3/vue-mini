@@ -46,8 +46,8 @@ export function trigger(target, key, type) {
   const effectsToRun = new Set()
 
   addToRun(effects)
-  // 只有当操作类型为 ADD 时，才触发与 ITERATE_KEY 相关联的副作用函数
-  if (type === TriggerOpTypes.ADD) {
+  // 只有当操作类型为 ADD | DELETE 时，才触发与 ITERATE_KEY 相关联的副作用函数
+  if (type === TriggerOpTypes.ADD || type == TriggerOpTypes.DELETE) {
     const iterateEffects = depsMap.get(ITERATE_KEY)
     addToRun(iterateEffects)
   }

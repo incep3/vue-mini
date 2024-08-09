@@ -1,6 +1,5 @@
 import { hasOwn } from '@vue/shared'
-import { ITERATE_KEY } from './reactive'
-import { track, trigger } from './reactiveEffect'
+import { track, trigger, ITERATE_KEY } from './reactiveEffect'
 import { TriggerOpTypes } from './constants'
 
 // @ts-ignore
@@ -22,6 +21,20 @@ class BaseReactiveHandler implements ProxyHandler<T> {
     trigger(target, key, type)
     return result
   }
+
+  deleteProperty(target, key): boolean {
+    const hadKey = hasOwn(target, key)
+    const result = Reflect.deleteProperty(target, key)
+    if (result && hadKey) {
+      // 需要 result 和 hadKey 同时为true，才出发trigger：只有当被删除的属性是自己的属性并且成功删除时，才出发更新
+      // 1. result：it will fail if target[key] is non-configurable.
+      // 2. delete 只能删除属于对象自身的属性，不能删除原型链上属性；
+      // 3. 如果删除的属性不存在对象自身上，delete 操作会返回true，这时就需要 hadKey 为true
+      trigger(target, key, TriggerOpTypes.DELETE)
+    }
+    return result
+  }
+
   has(target, key) {
     track(target, key)
     return Reflect.has(target, key)
