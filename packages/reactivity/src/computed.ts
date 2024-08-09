@@ -1,5 +1,4 @@
 import { effect } from './effect'
-import { ref } from './ref'
 import { track, trigger } from './reactiveEffect'
 
 export class ComputedRefImpl {}
