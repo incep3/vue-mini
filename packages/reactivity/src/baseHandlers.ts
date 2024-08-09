@@ -14,6 +14,10 @@ class BaseReactiveHandler implements ProxyHandler<T> {
     trigger(target, key)
     return result
   }
+  has(target, key) {
+    track(target, key)
+    return Reflect.has(target, key)
+  }
 }
 
 export const baseHandlers = new BaseReactiveHandler()
