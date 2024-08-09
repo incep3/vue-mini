@@ -1,4 +1,4 @@
-import { hasOwn } from '@vue/shared'
+import { hasChanged, hasOwn } from '@vue/shared'
 import { track, trigger, ITERATE_KEY } from './reactiveEffect'
 import { TriggerOpTypes } from './constants'
 
@@ -12,13 +12,17 @@ class BaseReactiveHandler implements ProxyHandler<T> {
   }
 
   set(target, key, newValue, reciever): any {
+    const oldValue = target[key]
+
     // 如果属性不存在，则说明是在添加新属性，否则是设置已有属性
     const type = hasOwn(target, key) ? TriggerOpTypes.SET : TriggerOpTypes.ADD
 
     const result = Reflect.set(target, key, newValue, reciever)
 
-    // 将 type 作为第三个参数传递给 trigger 函数
-    trigger(target, key, type)
+    // 比较新值和旧值，只有当不全等的时候才触发响应；NaN 与 NaN 进行全等比较总会得到false，因此 hasChanged 内用 Object.is 方法判断；
+    if (hasChanged(oldValue, newValue)) {
+      trigger(target, key, type)
+    }
     return result
   }
 
