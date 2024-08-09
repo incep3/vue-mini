@@ -1,4 +1,4 @@
-import { hasChanged, hasOwn, isArray, isObject } from '@vue/shared'
+import { hasChanged, hasOwn, isArray, isObject, isSymbol } from '@vue/shared'
 import { track, trigger, ITERATE_KEY } from './reactiveEffect'
 import { ReactiveFlags, TriggerOpTypes } from './constants'
 import { reactive, readonly, toRaw } from './reactive'
@@ -21,7 +21,9 @@ class BaseReactiveHandler implements ProxyHandler<T> {
 
     const res = Reflect.get(target, key, receiver)
 
-    if (!isReadonly) {
+    // 添加判断，如果 key 的类型是 symbol，则不进行追踪
+    // TODO：这里添加 !isSymbol(key) 会让通过的测试用例少一个
+    if (!isReadonly && !isSymbol(key)) {
       track(target, key)
     }
 
