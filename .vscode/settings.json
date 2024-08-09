@@ -1,0 +1,14 @@
+{
+  // Use the project's typescript version
+  "typescript.tsdk": "./node_modules/typescript/lib",
+
+  "prettier.enable": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.autoSave": "off",
+  "editor.formatOnType": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+
+  "eslint.quiet": false,
+  "liveServer.settings.port": 5502 // 显示 warning 的错误
+}

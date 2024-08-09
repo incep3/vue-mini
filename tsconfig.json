@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": false,
+    "jsx": "preserve",
+    "moduleResolution": "Node",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "importHelpers": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "lib": ["ESNext", "DOM"],
+    "paths": {
+      // 内部模块都指向 src/index.ts, 会有更好的代码跳转体验.
+      "@vue/*": ["packages/*/src"]
+    },
+    "types": ["node", "vite/client"]
+  },
+  "exclude": ["**/dist/**/*", "**/node_modules/**/*"]
+}
