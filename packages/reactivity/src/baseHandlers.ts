@@ -10,8 +10,9 @@ class BaseReactiveHandler implements ProxyHandler<T> {
   }
 
   set(target, key, newValue, reciever): any {
+    let result = Reflect.set(target, key, newValue, reciever)
     trigger(target, key)
-    return Reflect.set(target, key, newValue, reciever)
+    return result
   }
 }
 
