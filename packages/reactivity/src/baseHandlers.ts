@@ -1,4 +1,4 @@
-import { hasChanged, hasOwn, isObject } from '@vue/shared'
+import { hasChanged, hasOwn, isArray, isObject } from '@vue/shared'
 import { track, trigger, ITERATE_KEY } from './reactiveEffect'
 import { ReactiveFlags, TriggerOpTypes } from './constants'
 import { reactive, readonly, toRaw } from './reactive'
@@ -82,7 +82,7 @@ class MutableReactiveHandler extends BaseReactiveHandler {
     return Reflect.has(target, key)
   }
   ownKeys(target) {
-    track(target, ITERATE_KEY)
+    track(target, isArray(target) ? 'length' : ITERATE_KEY)
     return Reflect.ownKeys(target)
   }
 }
