@@ -1,9 +1,10 @@
 import { isObject, toRawType } from '@vue/shared'
-import { mutableHandlers } from './baseHandlers'
+import { mutableHandlers, shallowReactiveHandlers } from './baseHandlers'
 import { ReactiveFlags } from './constants'
 import { warn } from './warning'
 
 export const reactiveMap = new WeakMap()
+export const shallowReactiveMap = new WeakMap()
 
 enum TargetType {
   INVALID = 0,
@@ -28,6 +29,14 @@ function getTargetType(value) {
 
 export function reactive(target) {
   return createReactiveObject(target, mutableHandlers, reactiveMap)
+}
+
+export function shallowReactive(target) {
+  return createReactiveObject(
+    target,
+    shallowReactiveHandlers,
+    shallowReactiveMap
+  )
 }
 
 function createReactiveObject(target, baseHandlers, proxyMap) {

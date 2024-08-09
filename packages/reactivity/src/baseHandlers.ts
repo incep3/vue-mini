@@ -5,9 +5,10 @@ import { reactive, toRaw } from './reactive'
 
 // @ts-ignore
 class BaseReactiveHandler implements ProxyHandler<T> {
-  constructor() {}
+  constructor(protected readonly _isShallow = false) {}
 
   get(target: object, key: string, receiver: object): any {
+    const isShallow = this._isShallow
     // 代理对象可以通过 raw 属性访问原始数据
     if (key === ReactiveFlags.RAW) {
       return target
@@ -16,6 +17,10 @@ class BaseReactiveHandler implements ProxyHandler<T> {
     const res = Reflect.get(target, key, receiver)
 
     track(target, key)
+
+    if (isShallow) {
+      return res
+    }
 
     if (isObject(res)) {
       return reactive(res)
@@ -26,8 +31,8 @@ class BaseReactiveHandler implements ProxyHandler<T> {
 }
 
 class MutableReactiveHandler extends BaseReactiveHandler {
-  constructor() {
-    super()
+  constructor(isShallow = false) {
+    super(isShallow)
   }
 
   set(target, key, newValue, reciever): any {
@@ -72,3 +77,4 @@ class MutableReactiveHandler extends BaseReactiveHandler {
 }
 
 export const mutableHandlers = new MutableReactiveHandler()
+export const shallowReactiveHandlers = new MutableReactiveHandler(true)
