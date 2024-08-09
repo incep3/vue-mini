@@ -14,7 +14,7 @@ export function computed(getter) {
     scheduler: () => {
       dirty = true
       // 当计算属性依赖的响应式数据变化时，手动调用 trigger 函数触发响应
-      trigger(r, 'value', TriggerOpTypes.SET)
+      trigger(r, TriggerOpTypes.SET, 'value')
     },
   })
 

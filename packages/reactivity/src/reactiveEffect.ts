@@ -26,7 +26,7 @@ export function track(target, key) {
   activeEffect.deps.push(deps)
 }
 
-export function trigger(target, key, type) {
+export function trigger(target, type, key) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return
 

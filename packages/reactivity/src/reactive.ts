@@ -1,5 +1,5 @@
 import { isObject, toRawType } from '@vue/shared'
-import { baseHandlers } from './baseHandlers'
+import { mutableHandlers } from './baseHandlers'
 import { ReactiveFlags } from './constants'
 import { warn } from './warning'
 
@@ -27,7 +27,7 @@ function getTargetType(value) {
 }
 
 export function reactive(target) {
-  return createReactiveObject(target, baseHandlers, reactiveMap)
+  return createReactiveObject(target, mutableHandlers, reactiveMap)
 }
 
 function createReactiveObject(target, baseHandlers, proxyMap) {
