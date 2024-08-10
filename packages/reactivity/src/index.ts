@@ -19,6 +19,7 @@ export {
   shallowReactive,
   shallowReadonly,
   toRaw,
+  markRaw,
 } from './reactive'
 export { computed } from './computed'
 export { effect } from './effect'

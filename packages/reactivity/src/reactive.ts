@@ -1,4 +1,4 @@
-import { isObject, toRawType } from '@vue/shared'
+import { def, isObject, toRawType } from '@vue/shared'
 import {
   mutableHandlers,
   readonlyHandlers,
@@ -29,43 +29,49 @@ function targetTypeMap(rawType) {
 
 function getTargetType(value) {
   // isExtensible: Returns a value that indicates whether new properties can be added to an object.
-  return !Object.isExtensible(value)
+  return value[ReactiveFlags.IS_SKIP] || !Object.isExtensible(value)
     ? TargetType.INVALID
     : targetTypeMap(toRawType(value))
 }
 
 export function reactive(target) {
-  return createReactiveObject(target, mutableHandlers, reactiveMap)
+  return createReactiveObject(target, false, mutableHandlers, reactiveMap)
 }
 
 export function shallowReactive(target) {
   return createReactiveObject(
     target,
+    false,
     shallowReactiveHandlers,
     shallowReactiveMap
   )
 }
 
 export function readonly(target) {
-  return createReactiveObject(target, readonlyHandlers, readonlyMap)
+  return createReactiveObject(target, true, readonlyHandlers, readonlyMap)
 }
 
 export function shallowReadonly(target) {
   return createReactiveObject(
     target,
+    true,
     shallowReactiveHandlers,
     shallowReactiveMap
   )
 }
 
-function createReactiveObject(target, baseHandlers, proxyMap) {
+function createReactiveObject(target, isReadonly, baseHandlers, proxyMap) {
   // only object can be made reactive
   if (!isObject(target)) {
     warn('target should be Object.')
     return target
   }
   // target is already a Proxy, return it.
-  if (target[ReactiveFlags.RAW]) {
+  // exception: calling readonly() on a reactive object
+  if (
+    target[ReactiveFlags.RAW] &&
+    !(isReadonly && target[ReactiveFlags.IS_REACTIVE])
+  ) {
     return target
   }
   // target already has corresponding Proxy
@@ -96,7 +102,14 @@ export const isProxy = (value) => {
 }
 export function toRaw(observed) {
   const raw = observed && observed[ReactiveFlags.RAW]
-  return raw ? raw : observed
+  return raw ? toRaw(raw) : observed
+}
+
+export function markRaw(value) {
+  if (Object.isExtensible(value)) {
+    def(value, ReactiveFlags.IS_SKIP, true)
+  }
+  return value
 }
 
 export const toReactive = (value) => (isObject(value) ? reactive(value) : value)
