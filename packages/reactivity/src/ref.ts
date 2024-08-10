@@ -1,15 +1,69 @@
-import { hasOwn, isObject } from '@vue/shared'
-import { reactive } from './reactive'
+import { hasChanged, hasOwn, isObject } from '@vue/shared'
+import { toReactive } from './reactive'
+import { track, trigger } from './reactiveEffect'
+import { TriggerOpTypes } from './constants'
 
-export function ref(val) {
-  const wrapper = {
-    value: val,
+class RefImpl<T> {
+  private _value: T
+  public readonly __v_isRef = true
+
+  constructor(val, private readonly _shallow) {
+    this._value = val
   }
 
-  // 使用 Object.defineProperty 在 wrapper 对象上定义一个不可枚举的属性 __v_isRef,并且值为 true
-  Object.defineProperty(wrapper, '__v_isRef', { value: true })
+  get value() {
+    track(this, 'value')
+    return this._shallow ? this._value : toReactive(this._value)
+  }
+  set value(newVal) {
+    if (hasChanged(this._value, newVal)) {
+      this._value = newVal
+      trigger(this, TriggerOpTypes.SET, 'value')
+    }
+  }
+}
+export function ref(value) {
+  return createRef(value)
+}
+export function shallowRef(value) {
+  return createRef(value, true)
+}
+export function unref(ref) {
+  return isRef(ref) ? ref.value : ref
+}
+export function triggerRef(ref) {
+  trigger(ref, TriggerOpTypes.SET, 'value')
+}
+function createRef(value, shallow = false) {
+  if (isRef(value)) {
+    return value
+  }
+  return new RefImpl(value, shallow)
+}
+export function customRef(factory) {
+  return new CustomRefImpl(factory)
+}
 
-  return reactive(wrapper)
+class CustomRefImpl {
+  private readonly getter
+  private readonly setter
+
+  public __v_isRef = true
+
+  constructor(factory) {
+    const { get, set } = factory(
+      () => track(this, 'value'),
+      () => trigger(this, TriggerOpTypes.SET, 'value')
+    )
+    this.getter = get
+    this.setter = set
+  }
+  get value() {
+    return this.getter()
+  }
+  set value(newVal) {
+    this.setter(newVal)
+  }
 }
 
 export function toRef(obj, key) {
