@@ -1,3 +1,5 @@
+export const NOOP = () => {}
+
 const hasOwnProperty = Object.prototype.hasOwnProperty
 export const hasOwn = (
   val: object,
