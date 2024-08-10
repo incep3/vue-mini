@@ -24,3 +24,9 @@ export {
 export { computed } from './computed'
 export { effect } from './effect'
 export { trigger, track } from './reactiveEffect'
+export {
+  effectScope,
+  EffectScope,
+  getCurrentScope,
+  onScopeDispose,
+} from './effectScope'

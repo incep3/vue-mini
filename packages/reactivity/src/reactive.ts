@@ -3,6 +3,7 @@ import {
   mutableHandlers,
   readonlyHandlers,
   shallowReactiveHandlers,
+  shallowReadonlyHandlers,
 } from './baseHandlers'
 import { ReactiveFlags } from './constants'
 import { warn } from './warning'
@@ -55,15 +56,19 @@ export function shallowReadonly(target) {
   return createReactiveObject(
     target,
     true,
-    shallowReactiveHandlers,
-    shallowReactiveMap
+    shallowReadonlyHandlers,
+    shallowReadonlyMap
   )
 }
 
 function createReactiveObject(target, isReadonly, baseHandlers, proxyMap) {
   // only object can be made reactive
   if (!isObject(target)) {
-    warn('target should be Object.')
+    warn(
+      `value cannot be made ${isReadonly ? 'readonly' : 'reactive'}: ${String(
+        target
+      )}`
+    )
     return target
   }
   // target is already a Proxy, return it.
@@ -88,7 +93,11 @@ function createReactiveObject(target, isReadonly, baseHandlers, proxyMap) {
   proxyMap.set(target, proxy)
   return proxy
 }
+// only reactive object can be readonly
 export const isReactive = (value) => {
+  if (isReadonly(value)) {
+    return isReactive(value[ReactiveFlags.RAW])
+  }
   return !!(value && value[ReactiveFlags.IS_REACTIVE])
 }
 export const isReadonly = (value) => {
