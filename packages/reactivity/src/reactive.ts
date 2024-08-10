@@ -82,8 +82,22 @@ function createReactiveObject(target, baseHandlers, proxyMap) {
   proxyMap.set(target, proxy)
   return proxy
 }
-
+export const isReactive = (value) => {
+  return !!(value && value[ReactiveFlags.IS_REACTIVE])
+}
+export const isReadonly = (value) => {
+  return !!(value && value[ReactiveFlags.IS_READONLY])
+}
+export const isShallow = (value) => {
+  return !!(value && value[ReactiveFlags.IS_SHALLOW])
+}
+export const isProxy = (value) => {
+  return value ? !!value[ReactiveFlags.RAW] : false
+}
 export function toRaw(observed) {
   const raw = observed && observed[ReactiveFlags.RAW]
   return raw ? raw : observed
 }
+
+export const toReactive = (value) => (isObject(value) ? reactive(value) : value)
+export const toReadonly = (value) => (isObject(value) ? readonly(value) : value)
