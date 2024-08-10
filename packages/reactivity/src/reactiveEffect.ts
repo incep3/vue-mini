@@ -35,10 +35,10 @@ export function trigger(target, type: TriggerOpTypes, key, newValue?) {
 
   const addToRun = (effects) => {
     effects &&
-      effects.forEach((effectFn) => {
+      effects.forEach((effect) => {
         // 如果 trigger 触发执行的副作用函数与当前正在执行的副作用函数相同，则不触发执行
-        if (effectFn !== activeEffect) {
-          effectsToRun.add(effectFn)
+        if (effect !== activeEffect) {
+          effectsToRun.add(effect)
         }
       })
   }
@@ -66,12 +66,12 @@ export function trigger(target, type: TriggerOpTypes, key, newValue?) {
     })
   }
 
-  effectsToRun.forEach((effectFn) => {
-    if (effectFn.options.scheduler) {
-      effectFn.options.scheduler(effectFn)
+  effectsToRun.forEach((effect) => {
+    if (effect.scheduler) {
+      effect.scheduler(effect)
     } else {
       // 否则直接执行副作用函数（之前的默认行为）
-      effectFn()
+      effect.run()
     }
   })
 }
