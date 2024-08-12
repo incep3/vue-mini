@@ -79,7 +79,7 @@ class BaseReactiveHandler implements ProxyHandler<T> {
 
 class MutableReactiveHandler extends BaseReactiveHandler {
   constructor(isShallow = false) {
-    super(isShallow)
+    super(false, isShallow)
   }
 
   set(target, key, value, reciever): any {
