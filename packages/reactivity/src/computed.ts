@@ -1,5 +1,5 @@
 import { isFunction, NOOP } from '@vue/shared'
-import { effect } from './effect'
+import { ReactiveEffect } from './effect'
 import { trackRefValue, triggerRefValue } from './ref'
 export class ComputedRefImpl {
   public dep?
@@ -10,19 +10,16 @@ export class ComputedRefImpl {
   public readonly effect
   public readonly __v_isRef = true
   constructor(getter, private readonly _setter) {
-    this.effect = effect(getter, {
-      lazy: true,
-      scheduler: () => {
-        if (!this._dirty) {
-          this._dirty = true
-          triggerRefValue(this)
-        }
-      },
+    this.effect = new ReactiveEffect(getter, () => {
+      if (!this._dirty) {
+        this._dirty = true
+        triggerRefValue(this)
+      }
     })
   }
   get value() {
     if (this._dirty) {
-      this._value = this.effect()
+      this._value = this.effect.run()
       this._dirty = false
     }
     trackRefValue(this)
