@@ -1,8 +1,9 @@
 import { isFunction, NOOP } from '@vue/shared'
-import { TriggerOpTypes } from './constants'
 import { effect } from './effect'
-import { track, trigger } from './reactiveEffect'
+import { trackRefValue, triggerRefValue } from './ref'
 export class ComputedRefImpl {
+  public dep?
+
   private _value
   private _dirty = true
 
@@ -14,7 +15,7 @@ export class ComputedRefImpl {
       scheduler: () => {
         if (!this._dirty) {
           this._dirty = true
-          trigger(this, TriggerOpTypes.SET, 'value')
+          triggerRefValue(this)
         }
       },
     })
@@ -24,8 +25,8 @@ export class ComputedRefImpl {
       this._value = this.effect()
       this._dirty = false
     }
+    trackRefValue(this)
     // 当读取 value 时，手动调用 track 函数进行追踪
-    track(this, 'value')
     return this._value
   }
   set value(newValue) {

@@ -1,10 +1,38 @@
 import { hasChanged, hasOwn, isObject } from '@vue/shared'
 import { toReactive } from './reactive'
-import { track, trigger } from './reactiveEffect'
+import { track, trackEffects, trigger, triggerEffects } from './reactiveEffect'
 import { TriggerOpTypes } from './constants'
+import { shouldTrack } from './baseHandlers'
+import { activeEffect } from './effect'
+
+export type Ref = {
+  value
+  __v_isRef: true
+}
+
+export const isRef = (r: any): r is Ref => {
+  return !!(r && r.__v_isRef) === true
+}
+
+export function trackRefValue(ref) {
+  if (!shouldTrack || !activeEffect) {
+    return
+  }
+
+  trackEffects(ref.dep || (ref.dep = new Set()))
+}
+
+export function triggerRefValue(ref) {
+  const dep = ref.dep
+  if (dep) {
+    triggerEffects([...dep])
+  }
+}
 
 class RefImpl<T> {
   private _value: T
+
+  public dep = undefined
   public readonly __v_isRef = true
 
   constructor(val, private readonly _shallow) {
@@ -12,16 +40,17 @@ class RefImpl<T> {
   }
 
   get value() {
-    track(this, 'value')
+    trackRefValue(this)
     return this._shallow ? this._value : toReactive(this._value)
   }
   set value(newVal) {
     if (hasChanged(this._value, newVal)) {
       this._value = newVal
-      trigger(this, TriggerOpTypes.SET, 'value')
+      triggerRefValue(this)
     }
   }
 }
+
 export function ref(value) {
   return createRef(value)
 }
@@ -32,7 +61,7 @@ export function unref(ref) {
   return isRef(ref) ? ref.value : ref
 }
 export function triggerRef(ref) {
-  trigger(ref, TriggerOpTypes.SET, 'value')
+  triggerRefValue(ref)
 }
 function createRef(value, shallow = false) {
   if (isRef(value)) {
@@ -45,6 +74,8 @@ export function customRef(factory) {
 }
 
 class CustomRefImpl {
+  public dep?
+
   private readonly getter
   private readonly setter
 
@@ -52,8 +83,8 @@ class CustomRefImpl {
 
   constructor(factory) {
     const { get, set } = factory(
-      () => track(this, 'value'),
-      () => trigger(this, TriggerOpTypes.SET, 'value')
+      () => trackRefValue(this),
+      () => triggerRefValue(this)
     )
     this.getter = get
     this.setter = set
@@ -91,14 +122,6 @@ export function toRefs(obj) {
   }
   return out
 }
-
-export type Ref = {
-  __v_isRef: true
-  value
-}
-
-export const isRef = (val: unknown): val is Ref =>
-  isObject(val) && hasOwn(val, '__v_isRef')
 
 export function proxyRefs(target) {
   return new Proxy(target, {

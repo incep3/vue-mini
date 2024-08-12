@@ -21,6 +21,10 @@ export function track(target, key) {
     depsMap.set(key, (deps = new Set()))
   }
 
+  trackEffects(deps)
+}
+
+export function trackEffects(deps) {
   deps.add(activeEffect)
   // deps 就是一个与当前副作用函数存在联系的依赖集合
   // 将其添加到 activeEffect.deps 数组中
@@ -66,12 +70,18 @@ export function trigger(target, type: TriggerOpTypes, key, newValue?) {
     })
   }
 
-  effectsToRun.forEach((effect) => {
-    if (effect.scheduler) {
-      effect.scheduler(effect)
-    } else {
-      // 否则直接执行副作用函数（之前的默认行为）
-      effect.run()
+  triggerEffects(effectsToRun)
+}
+
+export function triggerEffects(effects) {
+  effects.forEach((effect) => {
+    if (effect !== activeEffect) {
+      if (effect.scheduler) {
+        effect.scheduler(effect)
+      } else {
+        // 否则直接执行副作用函数（之前的默认行为）
+        effect.run()
+      }
     }
   })
 }
