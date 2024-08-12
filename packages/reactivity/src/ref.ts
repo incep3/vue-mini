@@ -1,15 +1,100 @@
-import { hasOwn, isObject } from '@vue/shared'
-import { reactive } from './reactive'
+import { hasChanged, hasOwn, isObject } from '@vue/shared'
+import { toReactive } from './reactive'
+import { track, trackEffects, trigger, triggerEffects } from './reactiveEffect'
+import { TriggerOpTypes } from './constants'
+import { shouldTrack } from './baseHandlers'
+import { activeEffect } from './effect'
 
-export function ref(val) {
-  const wrapper = {
-    value: val,
+export type Ref = {
+  value
+  __v_isRef: true
+}
+
+export const isRef = (r: any): r is Ref => {
+  return !!(r && r.__v_isRef) === true
+}
+
+export function trackRefValue(ref) {
+  if (!shouldTrack || !activeEffect) {
+    return
   }
 
-  // 使用 Object.defineProperty 在 wrapper 对象上定义一个不可枚举的属性 __v_isRef,并且值为 true
-  Object.defineProperty(wrapper, '__v_isRef', { value: true })
+  trackEffects(ref.dep || (ref.dep = new Set()))
+}
 
-  return reactive(wrapper)
+export function triggerRefValue(ref) {
+  const dep = ref.dep
+  if (dep) {
+    triggerEffects([...dep])
+  }
+}
+
+class RefImpl<T> {
+  private _value: T
+
+  public dep = undefined
+  public readonly __v_isRef = true
+
+  constructor(val, private readonly _shallow) {
+    this._value = val
+  }
+
+  get value() {
+    trackRefValue(this)
+    return this._shallow ? this._value : toReactive(this._value)
+  }
+  set value(newVal) {
+    if (hasChanged(this._value, newVal)) {
+      this._value = newVal
+      triggerRefValue(this)
+    }
+  }
+}
+
+export function ref(value) {
+  return createRef(value)
+}
+export function shallowRef(value) {
+  return createRef(value, true)
+}
+export function unref(ref) {
+  return isRef(ref) ? ref.value : ref
+}
+export function triggerRef(ref) {
+  triggerRefValue(ref)
+}
+function createRef(value, shallow = false) {
+  if (isRef(value)) {
+    return value
+  }
+  return new RefImpl(value, shallow)
+}
+export function customRef(factory) {
+  return new CustomRefImpl(factory)
+}
+
+class CustomRefImpl {
+  public dep?
+
+  private readonly getter
+  private readonly setter
+
+  public __v_isRef = true
+
+  constructor(factory) {
+    const { get, set } = factory(
+      () => trackRefValue(this),
+      () => triggerRefValue(this)
+    )
+    this.getter = get
+    this.setter = set
+  }
+  get value() {
+    return this.getter()
+  }
+  set value(newVal) {
+    this.setter(newVal)
+  }
 }
 
 export function toRef(obj, key) {
@@ -37,14 +122,6 @@ export function toRefs(obj) {
   }
   return out
 }
-
-export type Ref = {
-  __v_isRef: true
-  value
-}
-
-export const isRef = (val: unknown): val is Ref =>
-  isObject(val) && hasOwn(val, '__v_isRef')
 
 export function proxyRefs(target) {
   return new Proxy(target, {

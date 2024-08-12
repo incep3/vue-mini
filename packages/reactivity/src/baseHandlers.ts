@@ -41,7 +41,13 @@ class BaseReactiveHandler implements ProxyHandler<T> {
   get(target: object, key: string, receiver: object): any {
     const isReadonly = this._isReadonly,
       isShallow = this._isShallow
-    if (key === ReactiveFlags.RAW) {
+    if (key === ReactiveFlags.IS_REACTIVE) {
+      return !isReadonly
+    } else if (key === ReactiveFlags.IS_READONLY) {
+      return isReadonly
+    } else if (key === ReactiveFlags.IS_SHALLOW) {
+      return isShallow
+    } else if (key === ReactiveFlags.RAW) {
       // 代理对象可以通过 raw 属性访问原始数据
       return target
     }
@@ -73,7 +79,7 @@ class BaseReactiveHandler implements ProxyHandler<T> {
 
 class MutableReactiveHandler extends BaseReactiveHandler {
   constructor(isShallow = false) {
-    super(isShallow)
+    super(false, isShallow)
   }
 
   set(target, key, value, reciever): any {
