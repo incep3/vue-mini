@@ -1,5 +1,7 @@
 export const NOOP = () => {}
 
+export const isOn = (key: string): boolean => /^on/.test(key)
+
 export const extend = Object.assign
 
 const hasOwnProperty = Object.prototype.hasOwnProperty

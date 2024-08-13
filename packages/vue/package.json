@@ -1,0 +1,22 @@
+{
+  "name": "vue",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "cypress open",
+    "serve": "serve ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@vue/compiler-core": "workspace:*",
+    "@vue/runtime-dom": "workspace:*",
+    "@vue/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "cypress": "^11.0.1",
+    "serve": "^14.1.1"
+  }
+}
