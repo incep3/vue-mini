@@ -54,6 +54,20 @@ export function createRenderer(options) {
     } else if (typeof type === 'object') {
       // vnode.type 的值是选项对象，作为组件来处理
       processComponent(n1, n2, container, anchor)
+    } else if (typeof type === 'object' && type.__isTeleport) {
+      type.process(n1, n2, container, anchor, {
+        patch,
+        patchChildren,
+        // 用来移动被 Teleport 的内容
+        move(vnode, container, anchor) {
+          insert(
+            // 只考虑了移动组件和普通元素
+            vnode.component ? vnode.component.subTree.el : vnode.el,
+            container,
+            anchor
+          )
+        },
+      })
     } else {
       // 处理其他类型的 vnode
     }
